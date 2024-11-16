@@ -123,9 +123,4 @@ typedef struct midi_context {
 } midi_context_t;
 
 int midi_decode(midi_context_t *ctx, uint8_t *buf, int len);
-
-static double midi_note_to_freq(uint8_t note)
-{
-    double n = note;
-    return 440 * pow(2, (n-69)/12);
-}
+double midi_note_to_freq(uint8_t note);

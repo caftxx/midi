@@ -20,6 +20,12 @@ int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len);
 int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len);
 int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len);
 
+double midi_note_to_freq(uint8_t note)
+{
+    double n = note;
+    return 440 * pow(2, (n-69)/12);
+}
+
 void midi_process_event(midi_context_t *ctx, midi_event_t *event)
 {
     if (ctx->tempo == 0) {

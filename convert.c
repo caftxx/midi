@@ -33,15 +33,20 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
     uint8_t buf[8] = {0};
     if (type == NOTE_ON) buf[0] = 0x80;
     buf[0] |= duty & 0x7f;
-    *(uint16_t *)&buf[1] = freq;
-    *(uint16_t *)&buf[3] = delta_ms;
-    if (write(wfd, buf, 5) != 5) {
-        LOG_ERROR("fail to write new event:0x%x 0x%x 0x%x 0x%x 0x%x", buf[0], buf[1], buf[2], buf[3], buf[4]);
+    buf[1] = freq & 0xff;
+    buf[2] = (freq >> 8) & 0xf;
+    buf[2] |= (delta_ms) & 0xf;
+    buf[3] = (delta_ms >> 4) & 0xff;
+
+    uint8_t ascii[16];
+    snprintf(ascii, sizeof(ascii), "0x%x,", *((uint32_t*)buf));
+    if (write(wfd, ascii, strlen(ascii)) != strlen(ascii)) {
+        LOG_ERROR("fail to write new event:0x%x 0x%x 0x%x 0x%x 0x%x", buf[0], buf[1], buf[2], buf[3]);
         abort();
     }
 }
 
-int main(int argc, void **argv)
+int main(int argc, char **argv)
 {
     if (argc < 2) {
         LOG_ERROR("missing midi file");
@@ -60,7 +65,7 @@ int main(int argc, void **argv)
     int wfd = open(new_fpath, O_WRONLY | O_CREAT, 0666);
 
     char meta[32];
-    snprintf(meta, sizeof(meta), "uint8_t midi_data[] = {");
+    snprintf(meta, sizeof(meta), "uint32_t midi_data[] = {");
     int ret = write(wfd, meta, strlen(meta));
     if (ret <= 0) {
         LOG_ERROR("fail to write header to new file:%s", new_fpath);
@@ -71,7 +76,7 @@ int main(int argc, void **argv)
     ctx.on_event = on_event;
     ctx.user_data = (void *)wfd;
 
-    char buf[BUF_SIZE] = {0};
+    uint8_t buf[BUF_SIZE] = {0};
     while (1) {;
         ret = read(rfd, buf, sizeof(buf));
         if (ret == 0) {

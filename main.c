@@ -24,7 +24,7 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
             ctx->decode_tracks_count, event->delta, event->status, freq, event->param2);
 }
 
-int main(int argc, void **argv)
+int main(int argc, char **argv)
 {
     if (argc < 2) {
         LOG_ERROR("missing midi file");
@@ -41,7 +41,7 @@ int main(int argc, void **argv)
     midi_context_t ctx = {0};
     ctx.on_event = on_event;
 
-    char buf[BUF_SIZE] = {0};
+    uint8_t buf[BUF_SIZE] = {0};
     while (1) {;
         int ret = read(fd, buf, sizeof(buf));
         if (ret == 0) {
