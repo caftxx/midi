@@ -8,14 +8,19 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
-#include <endian.h>
 
 #include "midi.h"
 
 void on_event(midi_context_t *ctx, midi_event_t *event)
 {
-    LOG_INFO("track:%d, delta:%d, status:0x%x, param1:0x%x, param2:0x%x",
-            ctx->decode_tracks_count, event->delta, event->status, event->param1, event->param2);
+    uint8_t type = event->status & 0xf0;
+    if (type != NOTE_ON && type != NOTE_OFF) {
+        return;
+    }
+
+    int freq = midi_note_to_freq(event->param1);
+    LOG_INFO("track:%d, delta:%d, status:0x%x, freq:%d, volocity:%d",
+            ctx->decode_tracks_count, event->delta, event->status, freq, event->param2);
 }
 
 int main(int argc, void **argv)

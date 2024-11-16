@@ -20,6 +20,27 @@ int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len);
 int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len);
 int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len);
 
+void midi_process_event(midi_context_t *ctx, midi_event_t *event)
+{
+    if (ctx->tempo == 0) {
+        // Start with default "microseconds per quarter" according to midi standard
+        ctx->tempo = 500000;
+    }
+
+    // according to MIDI spec
+    // time (in ms) = number_of_ticks * tempo / divisor * 1000
+    // where tempo is expressed in microseconds per quarter note and
+    // the divisor is expressed in MIDI ticks per quarter note
+    // Do the math in microseconds.
+    // Do not use floating point, in some microcontrollers
+    // floating point is slow or lacks precision.
+    event->delta = (event->delta * ctx->tempo + (ctx->header.ticks_per_quarter / 2)) / ctx->header.ticks_per_quarter;
+
+    if (ctx->on_event) {
+        ctx->on_event(ctx, &ctx->track.event);
+    }
+}
+
 int midi_number(uint8_t *buf, int *len, int *value)
 {
     int ret = MIDI_OK;
@@ -154,9 +175,7 @@ int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
     if (event->status >= _FIRST_1BYTE_EVENT && event->status <= _LAST_1BYTE_EVENT) {
         event->param2 = 0;
         ctx->status = DECODE_EVENT_DELTA;
-        if (ctx->on_event) {
-            ctx->on_event(ctx, &ctx->track.event);
-        }
+        midi_process_event(ctx, event);
     } else {
         ctx->status = DECODE_EVENT_PARAM2;
     }
@@ -172,9 +191,7 @@ int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
     event->param2 = buf[0];
     *len = 1;
     ctx->status = DECODE_EVENT_DELTA;
-    if (ctx->on_event) {
-        ctx->on_event(ctx, &ctx->track.event);
-    }
+    midi_process_event(ctx, event);
 
     return MIDI_OK;
 }
@@ -207,7 +224,7 @@ int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len)
         return MIDI_AGAIN;
     }
 
-    if (event->is_meta && event->status == _TRACK_END_EVENT) {
+    if (event->is_meta && event->status == END_OF_TRACK) {
         // 0xFF 0x2F 0x00
         if (ctx->tmp.total_len != 0) {
             LOG_ERROR("invalid track end, expect 0 actual:0x%x", ctx->tmp.total_len);

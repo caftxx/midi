@@ -53,7 +53,6 @@
 #define SEQUENCER_SPECIFIC 0x7f
 #define _FIRST_META_EVENT 0x00
 #define _LAST_META_EVENT 0x7f
-#define _TRACK_END_EVENT 0x2f
 
 // Sysex/escape events
 #define SYSEX 0xf0
@@ -101,6 +100,7 @@ typedef struct midi_context {
     midi_header_t header;
     midi_track_t track;
 
+    int tempo;
     int decode_tracks_count;
     int decode_len;
 
@@ -122,3 +122,9 @@ typedef struct midi_context {
 } midi_context_t;
 
 int midi_decode(midi_context_t *ctx, uint8_t *buf, int len);
+
+static double midi_note_to_freq(uint8_t note)
+{
+    double n = note;
+    return 440 * pow(2, (n-69)/12);
+}
