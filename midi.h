@@ -107,6 +107,7 @@ typedef struct midi_context {
     decode_status_t status;
 
     on_event_func on_event;
+    void *user_data;
 
     union {
         struct {
