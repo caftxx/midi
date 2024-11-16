@@ -9,15 +9,28 @@
 
 #include "midi.h"
 
+int midi_number(uint8_t *buf, int *len, int *value);
+int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len);
+
 int midi_number(uint8_t *buf, int *len, int *value)
 {
     int ret = MIDI_OK;
     int eat_len = 1;
     uint8_t *p = buf;
 
-    *value = (*value << 7) | (*p & 0x7f);
-    for (; *p >= 0x80 && p < (buf + *len); ++p, ++eat_len) {
+    for (; p < (buf + *len); ++p, ++eat_len) {
         *value = (*value << 7) | (*p & 0x7f);
+        if (*p < 0x80) {
+            break;
+        }
     }
 
     if (p == (buf + *len)) {
@@ -92,25 +105,22 @@ int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len)
 
 int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len)
 {
-    int ret = MIDI_OK;
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
 
-    ret = midi_number(buf, len, &ctx->tmp.value);
-    if (ret != MIDI_OK) {
-        ret = MIDI_AGAIN;
-    } else {
-        event->delta = ctx->tmp.value;
-        event->is_meta = 0;
-        ctx->status = DECODE_EVENT_STATUS;
+    if (midi_number(buf, len, &ctx->tmp.value) != MIDI_OK) {
+        return MIDI_AGAIN;
     }
 
-    return ret;
+    event->delta = ctx->tmp.value;
+    event->is_meta = 0;
+    ctx->status = DECODE_EVENT_STATUS;
+
+    return MIDI_OK;
 }
 
 int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len)
 {
-    int ret = MIDI_OK;
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
 
@@ -135,15 +145,14 @@ int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len)
         ctx->status = DECODE_EVENT_NON_CHANNEL;
     } else {
         LOG_ERROR("unsupport event status:0x%x", event->status);
-        ret = MIDI_ABORT;
+        return MIDI_ABORT;
     }
 
-    return ret;
+    return MIDI_OK;
 }
 
 int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
 {
-    int ret = MIDI_OK;
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
 
@@ -157,12 +166,11 @@ int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
         ctx->status = DECODE_EVENT_PARAM2;
     }
 
-    return ret;
+    return MIDI_OK;
 }
 
 int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
 {
-    int ret = MIDI_OK;
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
 
@@ -171,7 +179,7 @@ int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
     ctx->status = DECODE_EVENT_DELTA;
     midi_dump_event(ctx);
 
-    return ret;
+    return MIDI_OK;
 }
 
 int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len)
@@ -227,19 +235,19 @@ int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len)
 
 int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len)
 {
-    int ret = MIDI_AGAIN;
     int off = 0;
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
 
     *len = MIN(ctx->tmp.total_len - ctx->tmp.drop_len, *len);
     ctx->tmp.drop_len += *len;
-    if (ctx->tmp.drop_len == ctx->tmp.total_len) {
-        ctx->status = DECODE_EVENT_DELTA;
-        ret = MIDI_OK;
+    if (ctx->tmp.drop_len < ctx->tmp.total_len) {
+        return MIDI_AGAIN;
     }
 
-    return ret;
+    ctx->status = DECODE_EVENT_DELTA;
+
+    return MIDI_OK;
 }
 
 int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len)
@@ -247,6 +255,7 @@ int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
+typedef int (*midi_decode_func)(midi_context_t *ctx, uint8_t *buf, int *len);
 midi_decode_func g_midi_decode_func[] = {
     midi_decode_header,
     midi_decode_track_header,

@@ -113,17 +113,4 @@ typedef struct {
     } tmp;
 } midi_context_t;
 
-int midi_number(uint8_t *buf, int *len, int *value);
-
-typedef int (*midi_decode_func)(midi_context_t *ctx, uint8_t *buf, int *len);
-
 int midi_decode(midi_context_t *ctx, uint8_t *buf, int len);
-int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len);
