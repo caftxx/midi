@@ -12,6 +12,12 @@
 
 #include "midi.h"
 
+void on_event(midi_context_t *ctx, midi_event_t *event)
+{
+    LOG_INFO("track:%d, delta:%d, status:0x%x, param1:0x%x, param2:0x%x",
+            ctx->decode_tracks_count, event->delta, event->status, event->param1, event->param2);
+}
+
 int main(int argc, void **argv)
 {
     if (argc < 2) {
@@ -27,6 +33,8 @@ int main(int argc, void **argv)
     }
 
     midi_context_t ctx = {0};
+    ctx.on_event = on_event;
+
     char buf[BUF_SIZE] = {0};
     while (1) {;
         int ret = read(fd, buf, sizeof(buf));

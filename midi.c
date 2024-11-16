@@ -42,13 +42,6 @@ int midi_number(uint8_t *buf, int *len, int *value)
     return ret;
 }
 
-void midi_dump_event(midi_context_t *ctx)
-{
-    midi_event_t *event = &ctx->track.event;
-    LOG_INFO("track:%d, delta:%d, status:0x%x, param1:0x%x, param2:0x%x",
-            ctx->decode_tracks_count, event->delta, event->status, event->param1, event->param2);
-}
-
 int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len)
 {
     int eat_len = MIN(MIDI_HEADER_LEN - ctx->tmp.buf_off, *len);
@@ -161,7 +154,9 @@ int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
     if (event->status >= _FIRST_1BYTE_EVENT && event->status <= _LAST_1BYTE_EVENT) {
         event->param2 = 0;
         ctx->status = DECODE_EVENT_DELTA;
-        midi_dump_event(ctx);
+        if (ctx->on_event) {
+            ctx->on_event(ctx, &ctx->track.event);
+        }
     } else {
         ctx->status = DECODE_EVENT_PARAM2;
     }
@@ -177,7 +172,9 @@ int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
     event->param2 = buf[0];
     *len = 1;
     ctx->status = DECODE_EVENT_DELTA;
-    midi_dump_event(ctx);
+    if (ctx->on_event) {
+        ctx->on_event(ctx, &ctx->track.event);
+    }
 
     return MIDI_OK;
 }

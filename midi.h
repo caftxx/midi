@@ -70,6 +70,7 @@ typedef enum {
     DECODE_EVENT_DROP,
     DECODE_COMPLETE
 } decode_status_t;
+
 typedef struct {
     uint32_t magic; // MThd
     uint32_t len; // always is 6
@@ -77,6 +78,7 @@ typedef struct {
     short num_tracks; // number of chunks
     short ticks_per_quarter; // pulses per beat
 } midi_header_t;
+
 typedef struct {
     int delta;
     uint8_t status;
@@ -84,6 +86,7 @@ typedef struct {
     uint8_t param2;
     uint8_t is_meta;
 } midi_event_t;
+
 typedef struct {
     uint32_t magic;
     uint32_t len;
@@ -91,7 +94,10 @@ typedef struct {
     uint8_t last_event_status;
     midi_event_t event;
 } midi_track_t;
-typedef struct {
+
+typedef struct midi_context midi_context_t;
+typedef void (*on_event_func)(midi_context_t *ctx, midi_event_t *event);
+typedef struct midi_context {
     midi_header_t header;
     midi_track_t track;
 
@@ -99,6 +105,8 @@ typedef struct {
     int decode_len;
 
     decode_status_t status;
+
+    on_event_func on_event;
 
     union {
         struct {
