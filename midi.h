@@ -96,8 +96,8 @@ typedef struct {
     midi_event_t event;
 } midi_track_t;
 
-typedef struct midi_context midi_context_t;
-typedef void (*on_event_func)(midi_context_t *ctx, midi_event_t *event);
+struct midi_context;
+typedef void (*on_event_func)(struct midi_context *ctx, midi_event_t *event);
 typedef struct midi_context {
     midi_header_t header;
     midi_track_t track;
