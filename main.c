@@ -20,8 +20,15 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
     }
 
     int freq = midi_note_to_freq(event->param1);
-    LOG_INFO("track:%u, tempo:%u, delta:%u, status:0x%x, freq:%u, volocity:%u",
-            ctx->decode_tracks_count, ctx->tempo, event->delta, event->status, freq, event->param2);
+    uint32_t duty = event->param2;
+    if (duty > 127) {
+        duty = 127;
+    } else if (type == NOTE_OFF) {
+        duty = 0;
+    }
+    duty = duty / 127. * 100;
+    LOG_INFO("track:%u, tempo:%u, delta:%u, status:0x%x, freq:%u, duty:%u",
+            ctx->decode_tracks_count, ctx->tempo, event->delta, event->status, freq, duty);
 }
 
 int main(int argc, char **argv)
