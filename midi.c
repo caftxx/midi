@@ -5,10 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <endian.h>
 
 #include "midi.h"
 
+int midi_be32toh(uint32_t d);
+int midi_be16toh(uint16_t d);
 int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value);
 int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
@@ -69,6 +70,20 @@ int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value)
     return ret;
 }
 
+int midi_be32toh(uint32_t d)
+{
+    return ((d & 0x000000FF) << 24) |
+        ((d & 0x0000FF00) << 8) |
+        ((d & 0x00FF0000) >> 8) |
+        ((d & 0xFF000000) >> 24);
+}
+
+int midi_be16toh(uint16_t d)
+{
+    return ((d & 0xFF) << 8) |
+        ((d & 0xFF00) >> 8);
+}
+
 int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     int eat_len = MIN(MIDI_HEADER_LEN - ctx->tmp.buf_off, *len);
@@ -86,10 +101,10 @@ int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
         return MIDI_ABORT;
     }
 
-    ctx->header.len = be32toh(ctx->header.len);
-    ctx->header.format = be16toh(ctx->header.format);
-    ctx->header.ticks_per_quarter = be16toh(ctx->header.ticks_per_quarter);
-    ctx->header.num_tracks = be16toh(ctx->header.num_tracks);
+    ctx->header.len = midi_be32toh(ctx->header.len);
+    ctx->header.format = midi_be16toh(ctx->header.format);
+    ctx->header.ticks_per_quarter = midi_be16toh(ctx->header.ticks_per_quarter);
+    ctx->header.num_tracks = midi_be16toh(ctx->header.num_tracks);
 
     ctx->status = DECODE_TRACK_HEADER;
 
@@ -115,7 +130,7 @@ int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
         return MIDI_ABORT;
     }
 
-    track->len = be32toh(track->len);
+    track->len = midi_be32toh(track->len);
     track->last_event_status_avail = 0;
 
     ctx->status = DECODE_EVENT_DELTA;
