@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #define MIDI_HEADER_MAGIC       0x6468544d
 #define MIDI_TRACK_HEADER_MAGIC 0x6b72544d
 
@@ -9,8 +11,8 @@
 #define MIDI_HEADER_LEN         14U
 #define MIDI_TRACK_HEADER_LEN   8U
 
-#define LOG_ERROR(fmt, ...) do {fprintf(stderr, "%s:%d -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
-#define LOG_INFO(fmt, ...) do {fprintf(stdout, "%s:%d -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
+#define LOG_ERROR(fmt, ...) do {fprintf(stderr, "%s:%u -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
+#define LOG_INFO(fmt, ...) do {fprintf(stdout, "%s:%u -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Constants for the MIDI channel events, first nibble
@@ -79,7 +81,7 @@ typedef struct {
 } midi_header_t;
 
 typedef struct {
-    int delta;
+    uint32_t delta;
     uint8_t status;
     uint8_t param1;
     uint8_t param2;
@@ -100,9 +102,9 @@ typedef struct midi_context {
     midi_header_t header;
     midi_track_t track;
 
-    int tempo;
-    int decode_tracks_count;
-    int decode_len;
+    uint32_t tempo;
+    uint32_t decode_tracks_count;
+    uint32_t decode_len;
 
     decode_status_t status;
 
@@ -115,12 +117,12 @@ typedef struct midi_context {
             char buf[BUF_SIZE];
         };
         struct {
-            int total_len;
-            int drop_len;
+            uint32_t total_len;
+            uint32_t drop_len;
         };
-        int value;
+        uint32_t value;
     } tmp;
 } midi_context_t;
 
-int midi_decode(midi_context_t *ctx, uint8_t *buf, int len);
+int midi_decode(midi_context_t *ctx, uint8_t *buf, uint16_t len);
 double midi_note_to_freq(uint8_t note);

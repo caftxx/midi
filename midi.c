@@ -9,16 +9,16 @@
 
 #include "midi.h"
 
-int midi_number(uint8_t *buf, int *len, int *value);
-int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len);
-int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len);
+int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value);
+int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 
 double midi_note_to_freq(uint8_t note)
 {
@@ -47,10 +47,10 @@ void midi_process_event(midi_context_t *ctx, midi_event_t *event)
     }
 }
 
-int midi_number(uint8_t *buf, int *len, int *value)
+int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value)
 {
     int ret = MIDI_OK;
-    int eat_len = 1;
+    uint16_t eat_len = 1;
     uint8_t *p = buf;
 
     for (; p < (buf + *len); ++p, ++eat_len) {
@@ -69,7 +69,7 @@ int midi_number(uint8_t *buf, int *len, int *value)
     return ret;
 }
 
-int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     int eat_len = MIN(MIDI_HEADER_LEN - ctx->tmp.buf_off, *len);
     memcpy(&ctx->tmp.buf[ctx->tmp.buf_off], buf, eat_len);
@@ -96,7 +96,7 @@ int midi_decode_header(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     int eat_len = MIN(MIDI_TRACK_HEADER_LEN - ctx->tmp.buf_off, *len);
     memcpy(&ctx->tmp.buf[ctx->tmp.buf_off], buf, eat_len);
@@ -123,7 +123,7 @@ int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
@@ -139,7 +139,7 @@ int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
@@ -171,7 +171,7 @@ int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
@@ -189,7 +189,7 @@ int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     midi_track_t *track = &ctx->track;
     midi_event_t *event = &track->event;
@@ -202,7 +202,7 @@ int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     int off = 0;
     midi_track_t *track = &ctx->track;
@@ -253,12 +253,8 @@ int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_AGAIN;
 }
 
-int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
-    int off = 0;
-    midi_track_t *track = &ctx->track;
-    midi_event_t *event = &track->event;
-
     *len = MIN(ctx->tmp.total_len - ctx->tmp.drop_len, *len);
     ctx->tmp.drop_len += *len;
     if (ctx->tmp.drop_len < ctx->tmp.total_len) {
@@ -270,12 +266,12 @@ int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, int *len)
     return MIDI_OK;
 }
 
-int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, int *len)
+int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     return MIDI_OK;
 }
 
-typedef int (*midi_decode_func)(midi_context_t *ctx, uint8_t *buf, int *len);
+typedef int (*midi_decode_func)(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 midi_decode_func g_midi_decode_func[] = {
     midi_decode_header,
     midi_decode_track_header,
@@ -288,11 +284,11 @@ midi_decode_func g_midi_decode_func[] = {
     midi_decode_complete
 };
 
-int midi_decode(midi_context_t *ctx, uint8_t *buf, int len)
+int midi_decode(midi_context_t *ctx, uint8_t *buf, uint16_t len)
 {
     int ret = MIDI_OK;
-    int off = 0;
-    int _len = 0;
+    uint16_t off = 0;
+    uint16_t _len = 0;
     while (len > 0) {
         _len = len;
         ret = g_midi_decode_func[ctx->status](ctx, buf + off, &_len);

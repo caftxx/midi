@@ -38,7 +38,7 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
     buf[2] |= (delta_ms) & 0xf;
     buf[3] = (delta_ms >> 4) & 0xff;
 
-    uint8_t ascii[16];
+    char ascii[16];
     snprintf(ascii, sizeof(ascii), "0x%x,", *((uint32_t*)buf));
     if (write(wfd, ascii, strlen(ascii)) != strlen(ascii)) {
         LOG_ERROR("fail to write new event:0x%x 0x%x 0x%x 0x%x 0x%x", buf[0], buf[1], buf[2], buf[3]);
