@@ -20,8 +20,8 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
     }
 
     int freq = midi_note_to_freq(event->param1);
-    LOG_INFO("track:%d, delta:%d, status:0x%x, freq:%d, volocity:%d",
-            ctx->decode_tracks_count, event->delta, event->status, freq, event->param2);
+    LOG_INFO("track:%u, tempo:%u, delta:%u, status:0x%x, freq:%u, volocity:%u",
+            ctx->decode_tracks_count, ctx->tempo, event->delta, event->status, freq, event->param2);
 }
 
 int main(int argc, char **argv)

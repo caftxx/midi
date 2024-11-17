@@ -69,6 +69,7 @@ typedef enum {
     DECODE_EVENT_PARAM2,
     DECODE_EVENT_NON_CHANNEL,
     DECODE_EVENT_DROP,
+    DECODE_EVENT_SET_TEMPO,
     DECODE_COMPLETE
 } decode_status_t;
 

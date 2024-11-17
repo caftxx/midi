@@ -12,6 +12,7 @@ int midi_be32toh(uint32_t d);
 int midi_be16toh(uint16_t d);
 int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value);
 int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+int midi_decode_event_set_tempo(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
 int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
@@ -263,6 +264,15 @@ int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *l
         return MIDI_OK;
     }
 
+    if (event->is_meta && event->status == SET_TEMPO) {
+        if (ctx->tmp.total_len != 3) {
+            LOG_ERROR("invalid set tempo, expect 3 actual:0x%x", ctx->tmp.total_len);
+            return MIDI_ABORT;
+        }
+        ctx->status = DECODE_EVENT_SET_TEMPO;
+        return MIDI_OK;
+    }
+
     ctx->status = DECODE_EVENT_DROP;
 
     return MIDI_AGAIN;
@@ -281,6 +291,25 @@ int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
     return MIDI_OK;
 }
 
+int midi_decode_event_set_tempo(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
+{
+    int eat_len = MIN(3 - ctx->tmp.buf_off, *len);
+    memcpy(&ctx->tmp.buf[ctx->tmp.buf_off], buf, eat_len);
+    ctx->tmp.buf_off += eat_len;
+    *len = eat_len;
+    if (ctx->tmp.buf_off < 3) {
+        return MIDI_AGAIN;
+    }
+
+    uint8_t *tempo = (uint8_t *)&ctx->tempo;
+    tempo[0] = ctx->tmp.buf[2];
+    tempo[1] = ctx->tmp.buf[1];
+    tempo[2] = ctx->tmp.buf[0];
+
+    ctx->status = DECODE_EVENT_DELTA;
+    return MIDI_OK;
+}
+
 int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 {
     return MIDI_OK;
@@ -296,6 +325,7 @@ midi_decode_func g_midi_decode_func[] = {
     midi_decode_event_param2,
     midi_decode_event_non_channel,
     midi_decode_event_drop,
+    midi_decode_event_set_tempo,
     midi_decode_complete
 };
 
