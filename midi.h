@@ -75,9 +75,9 @@ typedef enum {
 typedef struct {
     uint32_t magic; // MThd
     uint32_t len; // always is 6
-    short format; // 0: single Mtrk chunks sync; 1: two or more MTrk chunks sync; 2: multi MTrk chunks async
-    short num_tracks; // number of chunks
-    short ticks_per_quarter; // pulses per beat
+    uint16_t format; // 0: single Mtrk chunks sync; 1: two or more MTrk chunks sync; 2: multi MTrk chunks async
+    uint16_t num_tracks; // number of chunks
+    uint16_t ticks_per_quarter; // pulses per beat
 } midi_header_t;
 
 typedef struct {
