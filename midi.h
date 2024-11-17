@@ -11,8 +11,13 @@
 #define MIDI_HEADER_LEN         14U
 #define MIDI_TRACK_HEADER_LEN   8U
 
+#ifndef NDEBUG
 #define LOG_ERROR(fmt, ...) do {fprintf(stderr, "%s:%u -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
 #define LOG_INFO(fmt, ...) do {fprintf(stdout, "%s:%u -- "fmt"\n", __FILE__, __LINE__, ##__VA_ARGS__);} while (0)
+#else
+#define LOG_ERROR(fmt, ...)
+#define LOG_INFO(fmt, ...)
+#endif
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Constants for the MIDI channel events, first nibble
