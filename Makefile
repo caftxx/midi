@@ -3,10 +3,10 @@ CC = gcc
 CFLAGS = -Wall -g -lm
 
 # 定义目标文件
-TARGET = main convert
+TARGET = main
 
 # 定义对象文件
-OBJS = main.o convert.o
+OBJS = main.o midi.o
 
 # 默认目标
 all: $(TARGET)
@@ -17,9 +17,6 @@ all: $(TARGET)
 
 # 链接目标文件生成可执行文件
 main: main.o midi.o
-	$(CC) $^ -o $@ $(CFLAGS)
-
-convert: convert.o midi.o
 	$(CC) $^ -o $@ $(CFLAGS)
 
 # 清理目标

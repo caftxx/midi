@@ -31,6 +31,10 @@ void on_event(midi_context_t *ctx, midi_event_t *event)
             ctx->decode_tracks_count, ctx->tempo, event->delta, event->status, freq, duty);
 }
 
+void on_complete(midi_context_t *ctx)
+{
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -47,6 +51,7 @@ int main(int argc, char **argv)
 
     midi_context_t ctx = {0};
     ctx.on_event = on_event;
+    ctx.on_complete = on_complete;
 
     uint8_t buf[BUF_SIZE] = {0};
     while (1) {;

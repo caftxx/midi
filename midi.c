@@ -1,34 +1,25 @@
 #include <assert.h>
-#include <errno.h>
-#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "midi.h"
 
-int midi_be32toh(uint32_t d);
-int midi_be16toh(uint16_t d);
-int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value);
-int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_set_tempo(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
-int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static inline int midi_be32toh(uint32_t d);
+static inline int midi_be16toh(uint16_t d);
+static inline int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value);
+static int midi_decode_complete(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_set_tempo(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_drop(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_non_channel(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_param2(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_param1(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_status(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_event_delta(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len);
+static inline void midi_process_event(midi_context_t *ctx, midi_event_t *event);
 
-double midi_note_to_freq(uint8_t note)
-{
-    double n = note;
-    return 440 * pow(2, (n-69)/12);
-}
-
-void midi_process_event(midi_context_t *ctx, midi_event_t *event)
+static inline void midi_process_event(midi_context_t *ctx, midi_event_t *event)
 {
     if (ctx->tempo == 0) {
         // Start with default "microseconds per quarter" according to midi standard
@@ -49,7 +40,7 @@ void midi_process_event(midi_context_t *ctx, midi_event_t *event)
     }
 }
 
-int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value)
+static inline int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value)
 {
     int ret = MIDI_OK;
     uint16_t eat_len = 1;
@@ -71,7 +62,7 @@ int midi_number(uint8_t *buf, uint16_t *len, uint32_t *value)
     return ret;
 }
 
-int midi_be32toh(uint32_t d)
+static inline int midi_be32toh(uint32_t d)
 {
     return ((d & 0x000000FF) << 24) |
         ((d & 0x0000FF00) << 8) |
@@ -79,7 +70,7 @@ int midi_be32toh(uint32_t d)
         ((d & 0xFF000000) >> 24);
 }
 
-int midi_be16toh(uint16_t d)
+static inline int midi_be16toh(uint16_t d)
 {
     return ((d & 0xFF) << 8) |
         ((d & 0xFF00) >> 8);
@@ -95,17 +86,16 @@ int midi_decode_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
         return MIDI_AGAIN;
     }
 
-    memcpy(&ctx->header, ctx->tmp.buf, MIDI_HEADER_LEN);
+    ctx->header.magic = *(uint32_t *)ctx->tmp.buf;
+    ctx->header.len = midi_be32toh(*(uint32_t *)(ctx->tmp.buf + 4));
+    ctx->header.format = midi_be16toh(*(uint16_t *)(ctx->tmp.buf + 8));
+    ctx->header.num_tracks = midi_be16toh(*(uint16_t *)(ctx->tmp.buf + 10));
+    ctx->header.ticks_per_quarter = midi_be16toh(*(uint16_t *)(ctx->tmp.buf + 12));
 
     if (ctx->header.magic != MIDI_HEADER_MAGIC) {
         LOG_ERROR("invalid midi header magic:0x%x", ctx->header.magic);
         return MIDI_ABORT;
     }
-
-    ctx->header.len = midi_be32toh(ctx->header.len);
-    ctx->header.format = midi_be16toh(ctx->header.format);
-    ctx->header.ticks_per_quarter = midi_be16toh(ctx->header.ticks_per_quarter);
-    ctx->header.num_tracks = midi_be16toh(ctx->header.num_tracks);
 
     ctx->status = DECODE_TRACK_HEADER;
 
@@ -124,16 +114,14 @@ int midi_decode_track_header(midi_context_t *ctx, uint8_t *buf, uint16_t *len)
 
     midi_track_t *track = &ctx->track;
     track->magic = *(uint32_t *)(ctx->tmp.buf);
-    track->len = *(uint32_t *)(ctx->tmp.buf + 4);
+    track->len = midi_be32toh(*(uint32_t *)(ctx->tmp.buf + 4));
 
     if (track->magic != MIDI_TRACK_HEADER_MAGIC) {
         LOG_ERROR("invalid midi track header magic:0x%x", track->magic);
         return MIDI_ABORT;
     }
 
-    track->len = midi_be32toh(track->len);
     track->last_event_status_avail = 0;
-
     ctx->status = DECODE_EVENT_DELTA;
 
     return MIDI_OK;
@@ -345,10 +333,17 @@ int midi_decode(midi_context_t *ctx, uint8_t *buf, uint16_t len)
             memset(&ctx->tmp, 0, sizeof(ctx->tmp));
         }
 
+#ifndef NDEBUG
         ctx->decode_len += _len;
+#endif
 
         off += _len;
         len -= _len;
+    }
+
+    if (ctx->status == DECODE_COMPLETE && ctx->on_complete) {
+        LOG_INFO("decode MIDI complete");
+        ctx->on_complete(ctx);
     }
 
     return MIDI_OK;
